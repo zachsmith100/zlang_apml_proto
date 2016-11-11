@@ -1,0 +1,135 @@
+CExecuteButton : CButton
+	public
+		validateParameter param validators (out)errorText
+			result.success = true
+			errorText = ""
+
+			for i = 0; i < validators.length; i++
+				arr = Array
+				arr[] = param
+
+				path = EntryPoint.commandLineParams[0]
+				path .= EntryPoint.processName
+				params = "execute "
+		
+				params .= me.parent.className
+				params .= " "
+				params .= validators[i]
+				params .= " "
+
+				methodParamsJSON = ""
+				methodParamsJSON .= arr
+				methodParamsJSON = String.Replace(methodParamsJSON "\"" "\\\"")
+				params .= methodParamsJSON
+
+				response = Process.start(path params)
+				println(response)
+				if (response.success == false)
+					errorText = response.result.errorText
+					println(errorText)
+					result.success = false
+
+			result.result = result.success
+
+		onClick
+			methodParams = Array
+			errorTxt = ""
+			for i = 0; i < me.parent.methodParams.length; i++
+				obj = me.parent.methodParams[i]
+				val = obj.getValue()
+				methodParams[] = val
+				if (me.validateParameter(val obj.validators errorTxt) == false)
+					errorTxt = String.Replace(errorTxt "[name]" obj.caption)
+					msg = CMessageBox(title: "Validation error", text: errorTxt, icon: "error", buttons: "Ok")
+					msg.show()
+					return false
+
+			if (me.parent.className == "")
+				me.parent.className = ":global:"
+
+			path = EntryPoint.commandLineParams[0]
+			path .= EntryPoint.processName
+			params = "execute "
+			params .= me.parent.className
+			params .= " "
+			params .= me.parent.methodName
+			params .= " "
+
+			methodParamsJSON = ""
+			methodParamsJSON .= methodParams
+			methodParamsJSON = String.Replace(methodParamsJSON "\"" "\\\"")
+			params .= methodParamsJSON
+
+			response = Process.start(path params)
+
+			me.parent.hideWindow()
+			EntryPoint.thirdWindow = CShowResultsWindow(returnObject: response)
+			EntryPoint.thirdWindow.showWindow()
+
+			return true
+
+
+CMethodCallWindow : CWindow
+	public
+		onCreated
+			base.onCreated()
+
+			windowWidth = 400
+			margin = 5
+			marginX = 10
+			clientWidth = windowWidth - marginX * 2
+
+			me.fixSize(windowWidth 30)
+
+			pos = String.Find(me.fullMethodName "::")
+			ASSERT(pos != -1)
+			me.className = String.SubString(me.fullMethodName 0 pos)
+			me.methodName = me.fullMethodName
+			me.methodName = String.SubString(me.fullMethodName pos + 2 me.methodName.length - pos - 2)
+
+			currentMethod = ProjectTree.findMethodDescription(me.className me.methodName)
+
+			allHeight = 0
+			me.controls = Array
+			me.methodParams = Array
+
+			for i = 0; i < currentMethod.parameters.length; i++
+				param = currentMethod.parameters[i]
+				paramType = param["type"]
+				paramHeight = 0
+
+				caption = ""
+				if (param["description"].length > 0)
+					caption = param["description"]
+				else
+					caption = param["name"]
+				label = CTextLabel(title: caption, width: clientWidth, height: 15, wnd: me, x: marginX, y: allHeight + margin)
+				paramHeight += 15 + margin * 2
+				ctrl = Object
+				ctrlY = allHeight + margin + paramHeight
+				height = 20
+				if ((paramType == "") or (paramType == "edit"))
+					ctrl = CEdit(defaultValue: "", width: clientWidth, height: height, wnd: me, x: marginX, y: ctrlY)
+				if (paramType == "date")
+					ctrl = CCalendar(width: clientWidth, height: height, wnd: me, x: marginX, y: ctrlY)
+				if (paramType == "slider")
+					ctrl = CSlider(width: clientWidth, height: height, wnd: me, x: marginX, y: ctrlY, min: param["min"], max: param["max"])
+				if (paramType == "spinbox")
+					ctrl = CSpinBox(width: clientWidth, height: height, wnd: me, x: marginX, y: ctrlY, min: param["min"], max: param["max"])
+				if (paramType == "stringlist")
+					height = 150
+					ctrl = CEditableListView(width: clientWidth, height: height, wnd: me, x: marginX, y: ctrlY)
+				paramHeight += height + margin * 2
+				me.methodParams[] = ctrl
+				ctrl.validators = param["validators"]
+				ctrl.caption = caption
+				me.controls[] = ctrl
+				allHeight += paramHeight
+
+			me.executeButton = CExecuteButton(title: "Execute", width: 170, height: 30, wnd: me, x: (windowWidth - 170) / 2, y: allHeight + margin)
+			me.executeButton.parent = me
+			allHeight += 30 + margin * 2
+
+			me.fixSize(windowWidth allHeight)
+
+			return true

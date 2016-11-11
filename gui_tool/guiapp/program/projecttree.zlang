@@ -1,0 +1,75 @@
+singleton ProjectTree
+	public
+		load servicePath
+			fullPath = servicePath
+			fullPath .= "ProjectTree.json"
+			fIn = openStream(fullPath "json")
+
+			if fIn.opened == true
+				read(fIn me.tree)
+				return false
+			unset(fIn)
+			return true
+
+		fillComboBox comboBox
+			if (me.tree.convertable("array") == false)
+				return false
+
+			globalFunctions = me.tree[0]
+			for k = 0; k < globalFunctions.length; k++
+				currentMethod = globalFunctions[k]
+				title = "::"
+				title .= currentMethod.name
+				comboBox.addItem(title)		
+
+			for i = 1; i < me.tree.length; i++
+				currentClass = me.tree[i]
+				for k = 0; k < currentClass.methods.length; k++
+					currentMethod = currentClass.methods[k]
+					title = currentClass.name
+					title .= "::"
+					title .= currentMethod.name
+					comboBox.addItem(title)
+			return true
+
+		getMethodDescriptionJsonFilename className methodName
+			result.result = className + "___" + methodName + ".json"
+
+		findMethodDescription className methodName
+			descriptionObject = Object
+
+			path = me.getMethodDescriptionJsonFilename(className methodName)
+			fIn = openStream(path "json")
+			if fIn.opened == true
+				read(fIn descriptionObject)
+				result.result = descriptionObject
+				return true
+			unset(fIn)
+
+			if (className == "")
+				globalFunctions = me.tree[0]
+				for k = 0; k < globalFunctions.length; k++
+					descriptionObject = globalFunctions[k]
+					if (descriptionObject.name == methodName)
+						break				
+			else
+				for i = 1; i < me.tree.length; i++
+					currentClass = me.tree[i]
+					if (currentClass.name == className)
+						for k = 0; k < currentClass.methods.length; k++
+							descriptionObject = currentClass.methods[k]
+							if (descriptionObject.name == methodName)
+								break
+
+			result.result = descriptionObject
+			result.success = true
+
+		saveMethodDescription className methodName descriptionObject
+			path = me.getMethodDescriptionJsonFilename(className methodName)
+			fOut = createStream(path "json")
+			if fOut.opened == true
+				println(fOut descriptionObject)
+				return false
+			unset(fOut)
+			return true
+			

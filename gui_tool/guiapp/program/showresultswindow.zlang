@@ -1,0 +1,33 @@
+CShowResultsWindow : CWindow
+	public
+		fillListView obj nodeTitle nodeId listView
+			if (obj.convertable("class"))
+				if (obj.properties.length > 0)
+					props = obj.properties
+					for i = 0; i < props.length; i++
+						newObj = obj[props[i]]		
+						tmpId = nodeId
+						listView.addNode(props[i] tmpId)
+						me.fillListView(newObj props[i] tmpId listView)
+			else
+				if (obj.convertable("array"))
+					for i = 0; i < obj.length; i++
+						newObj = obj[i]
+						tmpId = nodeId
+						me.fillListView(newObj "" tmpId listView)	
+				else
+					tmpId = listView.addNode(obj nodeId)
+
+			return true
+
+		onCreated
+			base.onCreated()
+
+			me.fixSize(400 300)
+
+			me.listView = CTreeView(width: 380, height: 275, x: 10, y: 10, wnd: me)
+			nodeId = Object
+			me.fillListView(me.returnObject "result" nodeId me.listView)
+			me.listView.expandAll()
+
+			return true

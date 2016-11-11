@@ -1,0 +1,48 @@
+CMethodsViewComboBox : CComboBox
+	public
+		selectedItem = ""
+
+		fillList path
+			ProjectTree.load(path)
+			ProjectTree.fillComboBox(me)
+
+			return true
+
+CMethodSelectWindow : CWindow
+	public
+		onCreated
+			base.onCreated()
+
+			me.fixSize(400 120)
+			me.onClose = EntryPoint.onSomeWindowClose
+
+			me.label = CTextLabel(title: "Please, select method to build GUI", width: 380, height: 15, wnd: me, x: 10, y: 10)
+
+			me.combo = CMethodsViewComboBox(wnd: me, x: 10, y: 30, width: 380, height: 30)
+			me.combo.fillList(EntryPoint.commandLineParams[0])
+
+			me.buttonOK = CButton(title: "OK", width: 180, height: 30, x: 10, y: 70, wnd: me)
+			me.buttonOK.parent = me
+			me.buttonOK.onClick = me.onMethodSelected
+
+			me.buttonCancel = CButton(title:"Cancel", width: 180, height: 30, x: 210, y: 70, wnd: me)
+			me.buttonCancel.onClick = me.onMethodCanceled
+
+			return true
+
+		onMethodSelected
+			fullMethodName = me.parent.combo.getSelectedItem()
+			if (String.Find(fullMethodName ":") == -1)
+				msg = CMessageBox(title: "Invalid choice", text: "Please choose some method instead of some class!", icon: "error", buttons: "Ok")
+				msg.show()
+				return false
+
+			EntryPoint.secondWindow = CMethodCallWindow(title: me.parent.title, fullMethodName: fullMethodName)
+			EntryPoint.secondWindow.onClose = EntryPoint.onSomeWindowClose
+			EntryPoint.secondWindow.showWindow()
+			me.parent.hideWindow()
+			return true
+
+		onMethodCanceled
+			CWindowApplication.quit()
+			return true
